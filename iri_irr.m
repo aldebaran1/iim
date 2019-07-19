@@ -4,20 +4,20 @@ close all;
 
 plot_vertical_perturbation = 0;
 plot_horizontal_perturbation = 1;
-vertical = 1;
+vertical = 0;
 horizontal = 1;
 % Wavelengths
 lambda_z = 20;
-lambda_x = 3;
+lambda_x = 1;
 lambda_y = 0;
 % Dimensions and resolution
+H0 = 150; %km
+H1 = 350; %km
 X = 10; % km
 Y = 10; % km
-dx = 0.1; % km resolution
-dy = 0.1; % km resolution
+dx = 0.05; % km resolution
+dy = 0.5; % km resolution
 dz = 1; % km
-% Amplittude of irregularity in Z- direction
-A_z = 0.1;
 % Horizontal baselines
 x = 0 : dx : X;
 y = 0 : dy : Y;
@@ -28,8 +28,11 @@ IRI = readtable(irifn);
 altkm = table2array(IRI(:,1));
 Ne = table2array(IRI(:,2));
 % Vertical baseline after the IRI profile
-z = altkm(1) : dz : altkm(end);
-Nei = interp1(altkm, Ne, z, 'spline');
+
+[M,i0] = min(abs(altkm - H0));
+[M,i1] = min(abs(altkm - H1));
+z = altkm(i0) : dz : altkm(i1);
+Nei = interp1(altkm(i0:i1), Ne(i0:i1), z, 'spline');
 
 % 3D empty boxes
 Ne_box = ones(length(z), length(x), length(y));
@@ -42,10 +45,11 @@ if vertical
     z1 = 350; % km
     idh = (z >= z0) & (z <= z1);
     zi_n = z(idh)';
-
+    % Amplittude of irregularity in Z- direction
+    A_z = 0.1;
+    % Wavelength to wavenumber
     k_z = 2 * pi / lambda_z; % km
-     
-    % Taper?
+    % Taper function
     taper = hanning(length(zi_n))';
     Zh = zeros(1, length(z));
     Zh(idh) = Zh(idh) + taper;
@@ -108,6 +112,7 @@ if horizontal
         h = pcolor(x, z, Ne_irr_x);
         colormap jet
         cbar = colorbar; ylabel(cbar, 'Total Ne [el/m3]');
+        ylim([100, 800]);
         xlabel('Horizontal distance x [km]'); ylabel('Altitude z [km]')
         set(h, 'EdgeColor', 'none')
         ax2 = subplot(2, 1, 2);
@@ -134,6 +139,6 @@ else
 end
 
 %% Spectral analysis
-Y = fftn(dNe_box);
-figure()
-imagesc(log(squeeze(sum(abs(Y),1))))
+% Y = fftn(dNe_box);
+% figure()
+% imagesc(log(squeeze(sum(abs(Y),1))))
